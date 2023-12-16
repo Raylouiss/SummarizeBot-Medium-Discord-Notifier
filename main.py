@@ -86,9 +86,37 @@ def get_processed_posts():
         return []
 
 def generate_summary(text):
+    # Check if the length of the text exceeds 1024
+    max_chunk_length = 1024
 
-    # Generate a summary
-    return summarizer(text, min_length=50, length_penalty=2.0, num_beams=4, early_stopping=True)[0]['summary_text']
+    original_max_length = 142
+
+    # Split the text into chunks of max_chunk_length
+    chunks = [text[i:i + max_chunk_length] for i in range(0, len(text), max_chunk_length)]
+
+    # Initialize an empty list to store individual summaries
+    chunk_summaries = []
+
+    # Generate summaries for each chunk
+    for chunk in chunks:
+
+        max_length = original_max_length
+
+        while max_length > len(chunk):
+            max_length = max_length/2
+
+        chunk_summary = summarizer(chunk, max_length = max_length, length_penalty=2.0, num_beams=4, early_stopping=True)[0]['summary_text']
+        chunk_summaries.append(chunk_summary)
+
+    # Combine individual summaries
+    combined_summary = "\n".join(chunk_summaries)
+
+    # Check if the combined summary length exceeds 2000 characters
+    if len(combined_summary) > 2000:
+        # Recursively call the function with the combined summary as input
+        combined_summary = generate_summary(combined_summary)
+
+    return combined_summary
 
 if __name__ == "__main__":
     check_for_new_posts()
